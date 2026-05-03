@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorMiddleware');
+const seedSuperAdmin = require('./utils/seedSuperAdmin');
 
 const app = express();
 
@@ -13,7 +14,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Connect to DB
-connectDB();
+connectDB().then(seedSuperAdmin);
 
 // API Routes
 app.use('/api/auth', require('./routes/authRoutes'));
