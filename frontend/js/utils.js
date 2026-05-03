@@ -68,6 +68,12 @@ export async function loadComponents() {
       const path = window.location.pathname.split('/').pop();
       const links = sidebarContainer.querySelectorAll('.nav-link');
       links.forEach(link => {
+        const role = link.getAttribute('data-role');
+        if (role === 'admin' && user?.role !== 'Admin') {
+          link.style.display = 'none';
+          return;
+        }
+
         if (link.getAttribute('href').includes(path)) {
           link.style.backgroundColor = 'var(--color-primary)';
           link.style.color = 'white';
@@ -77,6 +83,11 @@ export async function loadComponents() {
       // Set user name
       const userNameEl = document.getElementById('sidebar-user-name');
       if (userNameEl && user) userNameEl.textContent = user.name;
+
+      const userRoleEl = document.getElementById('sidebar-user-role');
+      if (userRoleEl && user) {
+        userRoleEl.textContent = user.role === 'Admin' ? 'Administrator' : 'Member';
+      }
     } catch (e) {
       console.error('Failed to load sidebar', e);
     }

@@ -4,7 +4,8 @@ const User = require('../models/User');
 exports.getProjects = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const projects = await Project.find({
+    const isAdmin = req.user.role === 'Admin';
+    const projects = await Project.find(isAdmin ? {} : {
       $or: [{ createdBy: userId }, { members: userId }]
     })
     .populate('members', 'name email')
@@ -21,6 +22,10 @@ exports.createProject = async (req, res, next) => {
   try {
     const { name, description } = req.body;
     const userId = req.user.id;
+
+    if (req.user.role !== 'Admin') {
+      return res.status(403).json({ message: 'Only Admins can create projects' });
+    }
 
     if (!name) return res.status(400).json({ message: 'Project name is required' });
 

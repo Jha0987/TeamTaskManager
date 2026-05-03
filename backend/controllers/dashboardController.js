@@ -1,22 +1,36 @@
 const Task = require('../models/Task');
 const Project = require('../models/Project');
+const User = require('../models/User');
 
 exports.getDashboard = async (req, res, next) => {
   try {
     const userId = req.user.id; // From authMiddleware
+    const isAdmin = req.user.role === 'Admin';
 
-    // Find all projects for this user
-    const projects = await Project.find({
-      $or: [{ createdBy: userId }, { members: userId }]
-    }).lean();
+    // Admins can see all projects/tasks; members only see their own workspace.
+    const projectQuery = isAdmin
+      ? {}
+      : { $or: [{ createdBy: userId }, { members: userId }] };
+
+    const projects = await Project.find(projectQuery)
+      .populate('members', 'name email role')
+      .populate('createdBy', 'name email role')
+      .lean();
 
     const projectIds = projects.map(p => p._id);
 
     // Find tasks across all these projects
-    const tasks = await Task.find({ project: { $in: projectIds } })
+    const taskQuery = isAdmin ? {} : { project: { $in: projectIds } };
+
+    const tasks = await Task.find(taskQuery)
       .populate('project', 'name')
+      .populate('assignedTo', 'name email role')
       .sort({ createdAt: -1 })
       .lean();
+
+    const users = isAdmin
+      ? await User.find({}).select('name email role createdAt').sort({ createdAt: -1 }).lean()
+      : [];
 
     let total = tasks.length;
     let completed = 0;
@@ -40,8 +54,11 @@ exports.getDashboard = async (req, res, next) => {
     const recentTasks = tasks.slice(0, 5);
 
     res.status(200).json({
+      role: req.user.role,
       stats: { total, completed, pending, overdue },
-      recentTasks
+      recentTasks,
+      projects,
+      users
     });
   } catch (err) {
     next(err);

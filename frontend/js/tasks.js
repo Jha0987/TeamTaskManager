@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const boardEl = document.getElementById('kanban-board');
   const loadingEl = document.getElementById('tasks-loading');
   const user = getUser();
+  const isAdmin = user?.role === 'Admin';
   let projectMembers = [];
   let tasks = [];
 
@@ -31,11 +32,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   const taskForm = document.getElementById('taskForm');
   const modalTitle = document.getElementById('task-modal-title');
 
+  if (!isAdmin) {
+    btnOpenModal.style.display = 'none';
+  }
+
   const openModal = (task = null) => {
     taskForm.reset();
     const assigneeSelect = document.getElementById('taskAssignee');
     assigneeSelect.innerHTML = '<option value="">Unassigned</option>' + 
       projectMembers.map(m => `<option value="${m._id}">${m.name}</option>`).join('');
+
+    if (!isAdmin) {
+      assigneeSelect.value = user?.id || '';
+      assigneeSelect.disabled = true;
+      document.getElementById('taskTitle').readOnly = true;
+      document.getElementById('taskDesc').readOnly = true;
+      document.getElementById('taskDueDate').disabled = true;
+    } else {
+      assigneeSelect.disabled = false;
+      document.getElementById('taskTitle').readOnly = false;
+      document.getElementById('taskDesc').readOnly = false;
+      document.getElementById('taskDueDate').disabled = false;
+    }
 
     if (task) {
       modalTitle.textContent = 'Edit Task';
@@ -119,12 +137,12 @@ document.addEventListener('DOMContentLoaded', async () => {
           Due: ${formatDate(task.dueDate)}
         </div>
         <div class="task-actions">
-          <select class="status-select" data-id="${task._id}">
+          <select class="status-select" data-id="${task._id}" ${!isAdmin && task.assignedTo?._id !== user?.id ? 'disabled' : ''}>
             <option value="todo" ${s === 'todo' ? 'selected' : ''}>Todo</option>
             <option value="inprogress" ${s === 'inprogress' ? 'selected' : ''}>In Progress</option>
             <option value="done" ${s === 'done' ? 'selected' : ''}>Done</option>
           </select>
-          <div class="action-buttons">
+          <div class="action-buttons" style="display:${isAdmin ? 'flex' : 'none'};">
             <button class="btn-edit" data-id="${task._id}">Edit</button>
             <button class="btn-delete" data-id="${task._id}">Del</button>
           </div>
@@ -178,6 +196,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   taskForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (!isAdmin) return;
     const btnSubmit = document.getElementById('btn-submit-task');
     
     const id = document.getElementById('taskId').value;

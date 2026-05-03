@@ -13,13 +13,65 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
     const data = await api.get('/dashboard');
-    const stats = data.dashboard || { totalTasks: 0, completedTasks: 0, pendingTasks: 0, overdueTasks: 0 };
+    const stats = data.stats || { total: 0, completed: 0, pending: 0, overdue: 0 };
     const recentTasks = data.recentTasks || [];
+    const userRole = data.role || 'Member';
+    const isAdmin = userRole === 'Admin';
 
-    document.getElementById('stat-total').textContent = stats.totalTasks;
-    document.getElementById('stat-completed').textContent = stats.completedTasks;
-    document.getElementById('stat-pending').textContent = stats.pendingTasks;
-    document.getElementById('stat-overdue').textContent = stats.overdueTasks;
+    const adminOverview = document.getElementById('admin-overview');
+    const memberOverview = document.getElementById('member-overview');
+
+    if (isAdmin) {
+      adminOverview.classList.remove('hidden');
+      memberOverview.classList.add('hidden');
+    } else {
+      memberOverview.classList.remove('hidden');
+      adminOverview.classList.add('hidden');
+    }
+
+    document.getElementById('stat-total').textContent = stats.total;
+    document.getElementById('stat-completed').textContent = stats.completed;
+    document.getElementById('stat-pending').textContent = stats.pending;
+    document.getElementById('stat-overdue').textContent = stats.overdue;
+
+    if (isAdmin) {
+      const users = data.users || [];
+      const usersList = document.getElementById('admin-users-list');
+
+      if (users.length === 0) {
+        usersList.innerHTML = '<div class="empty-state">No users found.</div>';
+      } else {
+        usersList.innerHTML = users.map(user => `
+          <div class="card" style="padding: 1rem; display:flex; justify-content:space-between; align-items:center; gap:1rem;">
+            <div>
+              <div style="font-weight:600;">${user.name}</div>
+              <div style="color: var(--color-text-muted); font-size: 0.92rem;">${user.email}</div>
+            </div>
+            <div style="display:flex; align-items:center; gap:0.75rem;">
+              <select class="admin-role-select form-control" data-user-id="${user._id || user.id}" style="width: 140px;">
+                <option value="Member" ${user.role === 'Member' ? 'selected' : ''}>Member</option>
+                <option value="Admin" ${user.role === 'Admin' ? 'selected' : ''}>Admin</option>
+              </select>
+              <button class="btn btn-primary btn-save-role" data-user-id="${user._id || user.id}">Save</button>
+            </div>
+          </div>
+        `).join('');
+
+        document.querySelectorAll('.btn-save-role').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            const userId = e.target.getAttribute('data-user-id');
+            const select = document.querySelector(`.admin-role-select[data-user-id="${userId}"]`);
+            try {
+              await api.patch(`/users/${userId}/role`, { role: select.value });
+              showAlert('User role updated', 'success');
+              window.location.reload();
+            } catch (err) {
+              showAlert(err.message || 'Failed to update role');
+            }
+          });
+        });
+      }
+    }
 
     const tasksListEl = document.getElementById('recent-tasks-list');
     

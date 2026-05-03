@@ -42,6 +42,10 @@ exports.createTask = async (req, res, next) => {
       return res.status(400).json({ message: 'Title and projectId are required' });
     }
 
+    if (req.user.role !== 'Admin') {
+      return res.status(403).json({ message: 'Only Admins can create tasks' });
+    }
+
     const project = await Project.findById(projectId);
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
@@ -92,6 +96,13 @@ exports.updateTask = async (req, res, next) => {
       return res.status(403).json({ message: 'Not authorized to update tasks in this project' });
     }
 
+    const isAssignee = task.assignedTo && task.assignedTo.toString() === req.user.id;
+    const isStatusOnlyUpdate = Object.keys(req.body).every(key => ['status'].includes(key));
+
+    if (req.user.role !== 'Admin' && !(isAssignee && isStatusOnlyUpdate)) {
+      return res.status(403).json({ message: 'Members can only update the status of tasks assigned to them' });
+    }
+
     if (assignedTo !== undefined && assignedTo) {
       const assignee = await User.findById(assignedTo).select('name email');
       if (!assignee) {
@@ -126,7 +137,7 @@ exports.deleteTask = async (req, res, next) => {
     const project = await Project.findById(task.project);
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
-    if (!canAccessProject(project, req.user)) {
+    if (req.user.role !== 'Admin' || !canAccessProject(project, req.user)) {
       return res.status(403).json({ message: 'Not authorized to delete tasks in this project' });
     }
 

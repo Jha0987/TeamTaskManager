@@ -16,10 +16,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   const createForm = document.getElementById('createProjectForm');
   const projectsList = document.getElementById('projects-list');
   const loadingEl = document.getElementById('projects-loading');
-
   const user = getUser();
-  
-  // Only admins might be allowed to create projects normally, but for this demo let anyone try, backend will enforce if needed.
+
+  if (!user || user.role !== 'Admin') {
+    loadingEl.innerHTML = '<div class="empty-state">Project management is available to Admins only. Use Tasks to track work.</div>';
+    btnOpenModal.style.display = 'none';
+    return;
+  }
 
   const openModal = () => modal.classList.add('active');
   const closeModal = () => {
@@ -59,6 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               <span>Created: ${formatDate(p.createdAt)}</span>
             </div>
             <div class="project-actions">
+              <button class="btn btn-secondary btn-manage-members" data-id="${p._id}">Manage Members</button>
               <a href="tasks.html?projectId=${p._id}" class="btn btn-primary">View Tasks</a>
             </div>
           </div>
@@ -90,6 +94,87 @@ document.addEventListener('DOMContentLoaded', async () => {
       btnSubmit.disabled = false;
       btnSubmit.textContent = 'Create Project';
     }
+  });
+
+  const memberModal = document.getElementById('project-members-modal');
+  const memberList = document.getElementById('project-members-list');
+  const memberForm = document.getElementById('addMemberForm');
+  const memberProjectTitle = document.getElementById('member-project-title');
+  let activeProject = null;
+
+  const openMemberModal = (project) => {
+    activeProject = project;
+    memberProjectTitle.textContent = project.name;
+    renderMemberList(project.members || []);
+    memberModal.classList.add('active');
+  };
+
+  const closeMemberModal = () => {
+    memberModal.classList.remove('active');
+    activeProject = null;
+    memberForm.reset();
+  };
+
+  function renderMemberList(members) {
+    if (!members.length) {
+      memberList.innerHTML = '<div class="empty-state">No members added yet.</div>';
+      return;
+    }
+
+    memberList.innerHTML = members.map(member => `
+      <div class="card" style="padding: 0.9rem; display:flex; justify-content:space-between; align-items:center; gap:1rem;">
+        <div>
+          <div style="font-weight:600;">${member.name}</div>
+          <div style="color: var(--color-text-muted); font-size: 0.92rem;">${member.email}</div>
+        </div>
+        <button class="btn btn-secondary btn-remove-member" data-member-id="${member._id}">Remove</button>
+      </div>
+    `).join('');
+
+    document.querySelectorAll('.btn-remove-member').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const userId = e.target.getAttribute('data-member-id');
+        try {
+          await api.delete(`/projects/${activeProject._id}/remove-member`, { userId });
+          const data = await api.get('/projects');
+          const updated = data.projects.find(p => p._id === activeProject._id);
+          openMemberModal(updated);
+          loadProjects();
+        } catch (err) {
+          showAlert(err.message || 'Failed to remove member');
+        }
+      });
+    });
+  }
+
+  document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.btn-manage-members');
+    if (!btn) return;
+    const projectId = btn.getAttribute('data-id');
+    const data = await api.get('/projects');
+    const project = data.projects.find(p => p._id === projectId);
+    if (project) openMemberModal(project);
+  });
+
+  memberForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('memberEmail').value;
+    try {
+      await api.post(`/projects/${activeProject._id}/add-member`, { email });
+      const data = await api.get('/projects');
+      const updated = data.projects.find(p => p._id === activeProject._id);
+      openMemberModal(updated);
+      loadProjects();
+      memberForm.reset();
+    } catch (err) {
+      showAlert(err.message || 'Failed to add member');
+    }
+  });
+
+  document.getElementById('btn-close-member-modal').addEventListener('click', closeMemberModal);
+  document.getElementById('btn-cancel-member-modal').addEventListener('click', closeMemberModal);
+  memberModal.addEventListener('click', (e) => {
+    if (e.target === memberModal) closeMemberModal();
   });
 
   loadProjects();

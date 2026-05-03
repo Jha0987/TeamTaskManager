@@ -55,6 +55,28 @@
     </div>
   </div>
 
+  <div id="project-members-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Manage Members - <span id="member-project-title"></span></h2>
+        <button class="btn-close" id="btn-close-member-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="project-members-list" style="display:grid; gap:0.75rem; margin-bottom: 1rem;"></div>
+        <form id="addMemberForm">
+          <div class="form-group">
+            <label for="memberEmail">Add Member by Email</label>
+            <input type="email" id="memberEmail" class="form-control" placeholder="member@email.com" required>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btn-cancel-member-modal">Close</button>
+        <button type="submit" form="addMemberForm" class="btn btn-primary">Add Member</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="../js/projects.js"></script>
 </body>
 </html>
