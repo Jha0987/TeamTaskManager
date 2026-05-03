@@ -9,6 +9,7 @@ A production-ready full-stack application for managing team projects and tasks w
 - **Task Management**: Organize tasks within projects with status tracking
 - **Dashboard**: Overview of all projects and tasks
 - **Role-Based Access**: Admin and Member roles with different permissions
+- **Super Admin Seed**: A predefined super admin account is created on startup for full control
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 - **MongoDB Integration**: Persistent data storage with MongoDB Atlas
 
@@ -40,7 +41,8 @@ Ethara.Ai_Project/
 │   │   ├── authController.js   # Authentication logic
 │   │   ├── dashboardController.js
 │   │   ├── projectController.js
-│   │   └── taskController.js
+│   │   ├── taskController.js
+│   │   └── userController.js    # Admin user management
 │   ├── middleware/
 │   │   ├── authMiddleware.js   # JWT verification
 │   │   ├── errorHandler.js
@@ -55,7 +57,8 @@ Ethara.Ai_Project/
 │   │   ├── authRoutes.js
 │   │   ├── dashboardRoutes.js
 │   │   ├── projectRoutes.js
-│   │   └── taskRoutes.js
+│   │   ├── taskRoutes.js
+│   │   └── userRoutes.js        # Admin-only user endpoints
 │   ├── utils/
 │   │   ├── AppError.js
 │   │   ├── catchAsync.js
@@ -119,6 +122,9 @@ MONGO_URI=mongodb+srv://KanadNetworks:Test1234@kanadnetworks.h52g7kd.mongodb.net
 JWT_SECRET=your_super_secret_jwt_key_change_this_in_production
 JWT_EXPIRES_IN=7d
 NODE_ENV=development
+SUPER_ADMIN_NAME=Super Admin
+SUPER_ADMIN_EMAIL=superadmin@teamtaskmanager.com
+SUPER_ADMIN_PASSWORD=SuperAdmin@12345
 ```
 
 **Note**: Ensure your IP address is whitelisted in MongoDB Atlas if using the provided connection string.
@@ -132,6 +138,8 @@ npm start
 ```
 
 The server will start on `http://localhost:5000`
+
+On startup, the backend seeds one super admin account and resets all other existing users to the Member role.
 
 2. **Access the application**
 Open your browser and navigate to:
@@ -164,10 +172,15 @@ You'll be redirected to the login page.
 ### Dashboard
 - `GET /api/dashboard` - Get dashboard statistics
 
+### Users
+- `GET /api/users` - List all users (Admin only)
+- `PATCH /api/users/:id/role` - Update a user role (Admin only)
+
 ## 👤 User Roles
 
-- **Admin**: Full access to all features and can manage users
-- **Member**: Can view and manage assigned projects/tasks
+- **Super Admin**: Seeded account with full control over the app
+- **Admin**: Can manage projects, tasks, and team members
+- **Member**: Can view tasks and update assigned work only
 
 ## 🔧 Key Fixes Applied
 
@@ -175,6 +188,10 @@ You'll be redirected to the login page.
 - **Issue**: Login failed with "Illegal arguments: string, undefined"
 - **Cause**: Password field had `select: false` in the User model
 - **Solution**: Added `.select('+password')` in the login query to explicitly fetch the password
+
+### Super Admin Seed
+- **Issue**: The app needed a fixed admin account and role reset for existing users
+- **Solution**: Added a startup seed that creates one super admin and changes all other users to Member
 
 ## 📝 Usage Guide
 
@@ -184,6 +201,11 @@ You'll be redirected to the login page.
 4. **Create Projects**: Add new projects for your team
 5. **Manage Tasks**: Organize tasks within projects with status updates
 6. **Collaborate**: Share projects with team members
+
+### Super Admin Login
+- Email: `superadmin@teamtaskmanager.com`
+- Password: `SuperAdmin@12345`
+- Use this account for full admin control and member management
 
 ## 🐛 Troubleshooting
 
@@ -196,6 +218,10 @@ You'll be redirected to the login page.
 - Make sure password is at least 8 characters
 - Verify email address matches signup
 - Check browser console for error messages
+
+### Super admin not created yet
+- Restart the backend so the startup seed runs again
+- Confirm the `.env` file contains `SUPER_ADMIN_EMAIL` and `SUPER_ADMIN_PASSWORD`
 
 ### Frontend not loading
 - Clear browser cache (Ctrl+Shift+Del)
