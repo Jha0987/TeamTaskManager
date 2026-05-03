@@ -1,4 +1,6 @@
-const BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:5000/api' : '/api';
+const BASE_URL = window.location.hostname === 'localhost'
+  ? 'http://localhost:5000/api'
+  : 'https://teamtaskmanager-production-44e3.up.railway.app/api';
 
 async function apiFetch(endpoint, options = {}) {
   const token = localStorage.getItem('token');
