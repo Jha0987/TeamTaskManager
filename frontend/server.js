@@ -6,6 +6,10 @@ const port = process.env.PORT || 3000;
 
 app.use(express.static(__dirname));
 
+app.get('/health', (req, res) => {
+  res.status(200).send('ok');
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'pages', 'login.html'));
 });
@@ -20,6 +24,6 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'pages', 'login.html'));
 });
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Frontend server running on port ${port}`);
 });
