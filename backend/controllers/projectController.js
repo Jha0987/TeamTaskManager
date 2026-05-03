@@ -48,6 +48,11 @@ exports.addMember = async (req, res, next) => {
     const project = await Project.findById(id);
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
+    const isCreator = project.createdBy.toString() === req.user.id;
+    if (req.user.role !== 'Admin' && !isCreator) {
+      return res.status(403).json({ message: 'Only Admins or the project creator can add members' });
+    }
+
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -72,8 +77,13 @@ exports.removeMember = async (req, res, next) => {
     const project = await Project.findById(id);
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
-    if (project.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({ message: 'Only project creator can remove members' });
+    const isCreator = project.createdBy.toString() === req.user.id;
+    if (req.user.role !== 'Admin' && !isCreator) {
+      return res.status(403).json({ message: 'Only Admins or the project creator can remove members' });
+    }
+
+    if (!userId) {
+      return res.status(400).json({ message: 'userId is required' });
     }
 
     project.members = project.members.filter(memberId => memberId.toString() !== userId);
